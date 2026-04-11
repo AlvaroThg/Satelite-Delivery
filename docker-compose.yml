@@ -1,4 +1,16 @@
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: satelite-delivery-app
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - pgsql
+
   pgsql:
     image: postgres:16-alpine
     container_name: satelite-delivery-db
