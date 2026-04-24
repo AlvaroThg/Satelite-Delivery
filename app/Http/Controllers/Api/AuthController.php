@@ -19,11 +19,15 @@ class AuthController extends Controller
     {
         $data = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'email', 'unique:users'],
-            'phone'    => ['required', 'string', 'max:20'],
+            'email'    => ['nullable', 'email', 'unique:users'],
+            'phone'    => ['required', 'string', 'max:20', 'unique:users'],
             'password' => ['required', Password::min(8)],
             'role'     => ['sometimes', 'in:cliente,driver,admin'],
         ]);
+
+        if (empty($data['email'])) {
+            $data['email'] = $data['phone'] . '@satelite.com';
+        }
 
         $user  = User::create($data);
         $token = $user->createToken('api-token')->plainTextToken;
@@ -40,15 +44,15 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $data = $request->validate([
-            'email'    => ['required', 'email'],
+            'phone'    => ['required', 'string'],
             'password' => ['required'],
         ]);
 
-        $user = User::where('email', $data['email'])->first();
+        $user = User::where('phone', $data['phone'])->first();
 
         if (! $user || ! Hash::check($data['password'], $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Las credenciales son incorrectas.'],
+                'phone' => ['Las credenciales son incorrectas.'],
             ]);
         }
 

@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,13 +14,22 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->statefulApi();
-        
-        // ─── Middleware CORS para React Native ────────────────────
-        // Permite peticiones desde localhost (desarrollo local)
+
+        // ─── Trust Proxies (ngrok / túneles) ─────────────────────
+        // Necesario para que Laravel detecte HTTPS correctamente
+        // cuando está detrás de ngrok u otro reverse proxy.
+        $middleware->trustProxies(at: '*');
+
+        // ─── Excluir CSRF en rutas API ───────────────────────────
         $middleware->validateCsrfTokens(except: [
             'api/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // ─── JSON responses para rutas API ────────────────────────
+        // Garantiza que React Native siempre reciba JSON,
+        // nunca una página HTML de error de Laravel.
+        $exceptions->shouldRenderJsonWhen(function (Request $request) {
+            return $request->is('api/*') || $request->expectsJson();
+        });
     })->create();
